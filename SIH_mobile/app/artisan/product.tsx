@@ -1,0 +1,39 @@
+import { useState } from "react";
+import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+
+const API_URL = "http://10.5.65.32:5000";
+type Product = { _id?: string; title?: string; description?: string; category?: string; craft?: string; images?: string[]; materials?: { name?: string }[]; pricing?: { suggestedPrice?: number; currency?: string }; originalLanguage?: string; translations?: { language?: string; title?: string; description?: string }[]; artisan?: { name?: string; location?: string } };
+const text = (item: unknown) => typeof item === "string" ? item.trim() : "";
+
+export default function ArtisanProductDetails() {
+  const params = useLocalSearchParams<{ product?: string; language?: string }>();
+  const isHindi = params.language === "hi";
+  const [product, setProduct] = useState<Product>(() => { try { return params.product ? JSON.parse(params.product) : {}; } catch { return {}; } });
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [priceDraft, setPriceDraft] = useState(() => typeof product.pricing?.suggestedPrice === "number" ? String(product.pricing.suggestedPrice) : "");
+  const image = Array.isArray(product.images) ? text(product.images[0]) : "";
+  const update = (field: "title" | "description" | "category", value: string) => setProduct((current) => ({ ...current, [field]: value }));
+
+  const saveChanges = async () => {
+    if (!product._id) return;
+    const parsedPrice = priceDraft.trim() ? Number(priceDraft) : undefined;
+    if (priceDraft.trim() && (!Number.isFinite(parsedPrice ?? NaN) || (parsedPrice ?? 0) < 0)) { Alert.alert(isHindi ? "गलत कीमत" : "Invalid price", isHindi ? "मान्य कीमत दर्ज करें।" : "Enter a valid price."); return; }
+    try { setSaving(true); const response = await fetch(`${API_URL}/api/catalog/${product._id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: product.title, description: product.description, category: product.category, pricing: { ...product.pricing, suggestedPrice: parsedPrice } }) }); if (!response.ok) throw new Error(); setProduct((current) => ({ ...current, pricing: { ...current.pricing, suggestedPrice: parsedPrice } })); setEditing(false); Alert.alert(isHindi ? "सहेजा गया" : "Saved", isHindi ? "उत्पाद अपडेट हो गया।" : "Product updated successfully."); }
+    catch { Alert.alert(isHindi ? "अपडेट विफल" : "Update failed", isHindi ? "उत्पाद अपडेट नहीं हो सका।" : "The product could not be updated."); }
+    finally { setSaving(false); }
+  };
+  const deleteProduct = () => Alert.alert(isHindi ? "उत्पाद हटाएं?" : "Delete product?", isHindi ? "यह कार्रवाई वापस नहीं हो सकती।" : "This action cannot be undone.", [{ text: isHindi ? "रद्द करें" : "Cancel", style: "cancel" }, { text: isHindi ? "हटाएं" : "Delete", style: "destructive", onPress: async () => { if (!product._id) return; try { const response = await fetch(`${API_URL}/api/catalog/${product._id}`, { method: "DELETE" }); if (!response.ok) throw new Error(); router.back(); } catch { Alert.alert(isHindi ? "हटाना विफल" : "Delete failed", isHindi ? "उत्पाद हटाया नहीं जा सका।" : "The product could not be deleted."); } } }]);
+
+  return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}><Pressable onPress={() => router.back()}><Text style={styles.back}>‹ {isHindi ? "वापस" : "Back"}</Text></Pressable>{image ? <Image source={{ uri: image }} style={styles.image} /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>SIH</Text></View>}
+    {editing ? <TextInput value={text(product.title)} onChangeText={(value) => update("title", value)} style={styles.input} /> : <Text style={styles.title}>{text(product.title) || (isHindi ? "उत्पाद" : "Product")}</Text>}
+    {editing ? <TextInput value={text(product.category)} onChangeText={(value) => update("category", value)} style={styles.input} /> : <Text style={styles.category}>{text(product.category) || (isHindi ? "शिल्प" : "Handcrafted")}</Text>}
+    {editing ? <TextInput keyboardType="decimal-pad" value={priceDraft} onChangeText={setPriceDraft} placeholder={isHindi ? "कीमत" : "Price"} placeholderTextColor="#8A8A84" style={styles.input} /> : <Text style={styles.price}>{typeof product.pricing?.suggestedPrice === "number" ? `${text(product.pricing.currency) || "INR"} ${product.pricing.suggestedPrice}` : (isHindi ? "कीमत उपलब्ध नहीं" : "Price not available")}</Text>}
+    <View style={styles.section}><Text style={styles.sectionTitle}>{isHindi ? "विवरण" : "Description"}</Text>{editing ? <TextInput multiline value={text(product.description)} onChangeText={(value) => update("description", value)} style={[styles.input, styles.multiline]} /> : <Text style={styles.body}>{text(product.description) || (isHindi ? "विवरण उपलब्ध नहीं है" : "Description not available")}</Text>}</View>
+    <Info label={isHindi ? "सामग्री" : "Materials"} value={product.materials?.map((item) => text(item.name)).filter(Boolean).join(", ") || ""} /><Info label={isHindi ? "शिल्प" : "Craft"} value={text(product.craft)} /><Info label={isHindi ? "भाषा" : "Original language"} value={text(product.originalLanguage)} /><Info label={isHindi ? "कारीगर" : "Artisan"} value={[text(product.artisan?.name), text(product.artisan?.location)].filter(Boolean).join(" | ")} />
+    <View style={styles.actions}>{editing ? <Pressable onPress={saveChanges} disabled={saving} style={styles.primary}><Text style={styles.primaryText}>{saving ? "..." : (isHindi ? "सहेजें" : "Save")}</Text></Pressable> : <Pressable onPress={() => setEditing(true)} style={styles.primary}><Text style={styles.primaryText}>{isHindi ? "संपादित करें" : "Edit"}</Text></Pressable>}<Pressable onPress={deleteProduct} style={styles.delete}><Text style={styles.deleteText}>{isHindi ? "हटाएं" : "Delete"}</Text></Pressable></View>
+  </ScrollView></SafeAreaView>;
+}
+function Info({ label, value }: { label: string; value: string }) { return value ? <View style={styles.section}><Text style={styles.sectionTitle}>{label}</Text><Text style={styles.body}>{value}</Text></View> : null; }
+const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: "#F7F5EF" }, content: { padding: 20, paddingBottom: 45 }, back: { color: "#087F5B", fontSize: 17, fontWeight: "700", paddingVertical: 8 }, image: { backgroundColor: "#E7ECE5", borderRadius: 16, height: 270, marginTop: 10, width: "100%" }, placeholder: { alignItems: "center", backgroundColor: "#DDEBE2", borderRadius: 16, height: 270, justifyContent: "center", marginTop: 10, width: "100%" }, placeholderText: { color: "#087F5B", fontSize: 40, fontWeight: "800" }, title: { color: "#173B35", fontSize: 29, fontWeight: "800", marginTop: 20 }, category: { color: "#087F5B", fontSize: 16, fontWeight: "600", marginTop: 6 }, price: { color: "#B6532C", fontSize: 19, fontWeight: "700", marginTop: 12 }, section: { borderTopColor: "#D8DED8", borderTopWidth: 1, marginTop: 22, paddingTop: 15 }, sectionTitle: { color: "#173B35", fontSize: 17, fontWeight: "700" }, body: { color: "#59655F", fontSize: 16, lineHeight: 24, marginTop: 6 }, input: { backgroundColor: "#FFF", borderColor: "#D8DED8", borderRadius: 10, borderWidth: 1, color: "#173B35", fontSize: 18, marginTop: 14, padding: 12 }, multiline: { minHeight: 100, textAlignVertical: "top" }, actions: { flexDirection: "row", gap: 12, marginTop: 30 }, primary: { alignItems: "center", backgroundColor: "#087F5B", borderRadius: 10, flex: 1, padding: 14 }, primaryText: { color: "#FFF", fontWeight: "700" }, delete: { alignItems: "center", borderColor: "#B33A2B", borderRadius: 10, borderWidth: 1, flex: 1, padding: 14 }, deleteText: { color: "#B33A2B", fontWeight: "700" } });
