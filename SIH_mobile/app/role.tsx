@@ -16,8 +16,8 @@ export default function RoleScreen() {
         style={styles.card}
         onPress={() =>
           router.push({
-            pathname: "/artisan",
-            params: { language: selectedLanguage },
+            pathname: "/signin",
+            params: { language: selectedLanguage, role: "artisan" },
           })
         }
       >
@@ -33,8 +33,8 @@ export default function RoleScreen() {
         style={styles.card}
         onPress={() =>
           router.push({
-            pathname: "/buyer",
-            params: { language: selectedLanguage },
+            pathname: "/signin",
+            params: { language: selectedLanguage, role: "buyer" },
           })
         }
       >
