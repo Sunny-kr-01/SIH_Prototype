@@ -3,8 +3,8 @@ import { ActivityIndicator, FlatList, Image, Pressable, SafeAreaView, StyleSheet
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.20.56.14:5000";
-type Product = { _id?: string; title?: string; category?: string; description?: string; images?: string[]; pricing?: { suggestedPrice?: number; currency?: string } };
+const API_URL = "http://10.5.65.32:5000";
+type Product = { _id?: string; title?: string; category?: string; description?: string; images?: string[]; pricing?: { suggestedPrice?: number; currency?: string }; translations?: { language?: string; title?: string; category?: string }[] };
 const text = (item: unknown, fallback = "") => typeof item === "string" ? item.trim() : fallback;
 
 export default function ArtisanProducts() {
@@ -24,9 +24,10 @@ export default function ArtisanProducts() {
   const renderProduct = ({ item }: { item: Product }) => {
     const image = Array.isArray(item.images) ? text(item.images[0]) : "";
     const price = item.pricing?.suggestedPrice;
+    const translation = item.translations?.find((entry) => getLanguageCode(entry.language) === selectedLanguage);
     return <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push({ pathname: "/artisan/product", params: { product: JSON.stringify(item), language: selectedLanguage } })}>
       {image ? <Image source={{ uri: image }} style={styles.image} /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>SIH</Text></View>}
-      <View style={styles.body}><Text style={styles.title} numberOfLines={1}>{text(item.title, translate(selectedLanguage, "untitledProduct"))}</Text><Text style={styles.category}>{text(item.category, translate(selectedLanguage, "handcrafted"))}</Text><Text style={styles.price}>{typeof price === "number" ? `${text(item.pricing?.currency, "INR")} ${price}` : translate(selectedLanguage, "priceNotAvailable")}</Text><Text style={styles.status}>{translate(selectedLanguage, "active")}</Text></View>
+      <View style={styles.body}><Text style={styles.title} numberOfLines={1}>{text(translation?.title, text(item.title, translate(selectedLanguage, "untitledProduct")))}</Text><Text style={styles.category}>{text(translation?.category, text(item.category, translate(selectedLanguage, "handcrafted")))}</Text><Text style={styles.price}>{typeof price === "number" ? `${text(item.pricing?.currency, "INR")} ${price}` : translate(selectedLanguage, "priceNotAvailable")}</Text><Text style={styles.status}>{translate(selectedLanguage, "active")}</Text></View>
     </Pressable>;
   };
 

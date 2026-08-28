@@ -16,10 +16,10 @@ export async function extractPricingData({
     const parts = [];
 
     const prompt = `
-You are an AI pricing assistant for Indian handmade-artisan products.
+You are an AI pricing assistant for Indian handmade-artisan products sold B2B.
 
 Your job is to analyze the artisan's product description or speech and
-extract information required to estimate a FAIR B2B SELLING PRICE.
+extract information required to estimate a FAIR WHOLESALE B2B SELLING PRICE.
 
 IMPORTANT:
 
@@ -29,6 +29,11 @@ IMPORTANT:
   labor required to make the product.
 - Labor classification should be based on the described craft and work.
 - Do not assume every artisan has the same hourly labor rate.
+- Prefer conservative labor estimates for ordinary products. Do not turn a
+    simple product into a highly skilled or high-complexity job without clear
+    evidence from the artisan.
+- Estimate only one item's labor effort, not the value of the finished product
+    at retail or marketplace price.
 - Do not directly decide the final selling price.
 - Return structured information for a separate pricing engine.
 

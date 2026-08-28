@@ -1,8 +1,8 @@
 const LABOR_RATES = {
-    basic: 60,
-    intermediate: 90,
-    skilled: 130,
-    highly_skilled: 180
+    basic: 40,
+    intermediate: 60,
+    skilled: 85,
+    highly_skilled: 120
 };
 
 const COMPLEXITY_MULTIPLIER = {
@@ -100,13 +100,13 @@ export function calculateB2BPrice(data) {
     // -----------------------------
 
     const minimumPrice =
-        Math.round(baseCost * 1.05);
+        Math.round(baseCost * 1.03);
 
     const suggestedPrice =
-        Math.round(baseCost * 1.12);
+        Math.round(baseCost * 1.08);
 
     const maximumPrice =
-        Math.round(baseCost * 1.20);
+        Math.round(baseCost * 1.12);
 
 
     // -----------------------------
@@ -146,13 +146,13 @@ export function calculateB2BPrice(data) {
         bulkPricing: {
 
             "10-24":
-                Math.round(suggestedPrice * 0.95),
+                Math.round(suggestedPrice * 0.94),
 
             "25-49":
-                Math.round(suggestedPrice * 0.90),
+                Math.round(suggestedPrice * 0.88),
 
             "50+":
-                Math.round(suggestedPrice * 0.85)
+                Math.round(suggestedPrice * 0.82)
         },
 
         minimumOrderQuantity: 10

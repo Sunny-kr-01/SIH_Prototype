@@ -57,6 +57,21 @@ const productSchema = new mongoose.Schema(
                     required: true
                 },
 
+                category: {
+                    type: String,
+                    required: true
+                },
+
+                material: {
+                    type: String,
+                    default: ""
+                },
+
+                craft: {
+                    type: String,
+                    default: ""
+                },
+
                 description: {
                     type: String,
                     required: true

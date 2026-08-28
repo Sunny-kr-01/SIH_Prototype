@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "rea
 import { router, useLocalSearchParams } from "expo-router";
 import { getLanguageCode, getLanguageName, translate } from "../../constants/translations";
 
-const API_URL = "http://10.20.56.14:5000";
+const API_URL = "http://10.5.65.32:5000";
 
 export default function ArtisanHome() {
     const { language } = useLocalSearchParams<{ language?: string }>();

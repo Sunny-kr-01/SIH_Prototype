@@ -67,6 +67,9 @@ IMPORTANT:
 - Generate a natural Hindi description.
 - Generate a natural product description in the detected spoken language.
 - The detected-language description must be a product listing, not a transcript.
+- Generate the title, category, material, craft, and description separately in
+  English and Hindi, plus the detected spoken language when it is different.
+- Every language entry must contain all five listing fields in that language.
 - Provide useful e-commerce keywords.
 `
           },
@@ -146,6 +149,23 @@ IMPORTANT:
               type: Type.STRING
             },
             description: "Relevant e-commerce search keywords"
+          },
+
+          translations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                language: { type: Type.STRING },
+                title: { type: Type.STRING },
+                category: { type: Type.STRING },
+                material: { type: Type.STRING },
+                craft: { type: Type.STRING },
+                description: { type: Type.STRING }
+              },
+              required: ["language", "title", "category", "material", "craft", "description"]
+            },
+            description: "Complete product listing fields translated into English, Hindi, and the detected spoken language"
           }
         },
 
@@ -159,7 +179,8 @@ IMPORTANT:
           "descriptionEnglish",
           "descriptionHindi",
           "descriptionOriginal",
-          "keywords"
+          "keywords",
+          "translations"
         ]
       }
     }

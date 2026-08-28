@@ -126,6 +126,8 @@ router.post(
                                 maximumPrice:
                                     price.maximumPrice,
 
+                                bulkPricing: price.bulkPricing,
+
                                 currency: "INR"
                             }
                         },

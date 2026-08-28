@@ -63,6 +63,16 @@ router.post(
       ));
 
       // Create product document from AI result
+      const generatedTranslations = Array.isArray(result.translations) ? result.translations : [];
+      const translationFor = (language, fallbackDescription) => generatedTranslations.find((item) => String(item.language).toLowerCase() === language) || {
+        language,
+        title: result.title,
+        category: result.category,
+        material: result.material,
+        craft: result.craft,
+        description: fallbackDescription
+      };
+
       const product = await Product.create({
         title: result.title,
         description: result.descriptionEnglish,
@@ -77,22 +87,10 @@ router.post(
         originalLanguage: result.detectedLanguage,
 
         translations: [
-          {
-            language: "en",
-            title: result.title,
-            description: result.descriptionEnglish
-          },
-          {
-            language: "hi",
-            title: result.title,
-            description: result.descriptionHindi
-          },
+          translationFor("en", result.descriptionEnglish),
+          translationFor("hi", result.descriptionHindi),
           ...(!["en", "english", "hi", "hindi"].includes(String(result.detectedLanguage).toLowerCase())
-            ? [{
-                language: result.detectedLanguage,
-                title: result.title,
-                description: result.descriptionOriginal
-              }]
+            ? [translationFor(String(result.detectedLanguage).toLowerCase(), result.descriptionOriginal)]
             : [])
         ],
 

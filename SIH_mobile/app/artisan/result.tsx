@@ -20,7 +20,7 @@ import {
 } from "expo-audio";
 import { getLanguageCode, getNativeLanguageName, translate } from "../../constants/translations";
 
-const API_URL = "http://10.20.56.14:5000";
+const API_URL = "http://10.5.65.32:5000";
 
 export default function ProductResult() {
     const params = useLocalSearchParams();
@@ -43,6 +43,9 @@ export default function ProductResult() {
     const image = params.image ? String(params.image) : "";
     const catalogImages = params.images ? JSON.parse(String(params.images)) : [];
     const productId = params.productId ? String(params.productId) : "";
+    const generatedTranslations = (() => {
+        try { return params.translations ? JSON.parse(String(params.translations)) : []; } catch { return []; }
+    })();
 
     const keywords = params.keywords
         ? String(params.keywords).split("|||")
@@ -183,22 +186,10 @@ export default function ProductResult() {
 
                 originalLanguage: String(language),
 
-                translations: [
-                    {
-                        language: "en",
-                        title: String(title),
-                        description: String(descriptionEnglish),
-                    },
-                    {
-                        language: "hi",
-                        title: String(title),
-                        description: String(descriptionHindi),
-                    },
-                    ...(hasDistinctGeneratedLanguage ? [{
-                        language: generatedLanguage,
-                        title: String(title),
-                        description: String(descriptionOriginal),
-                    }] : []),
+                translations: generatedTranslations.length ? generatedTranslations : [
+                    { language: "en", title: String(title), category: String(category), material: String(material), craft: String(craft), description: String(descriptionEnglish) },
+                    { language: "hi", title: String(title), category: String(category), material: String(material), craft: String(craft), description: String(descriptionHindi) },
+                    ...(hasDistinctGeneratedLanguage ? [{ language: generatedLanguage, title: String(title), category: String(category), material: String(material), craft: String(craft), description: String(descriptionOriginal) }] : []),
                 ],
 
                 images: Array.isArray(catalogImages) && catalogImages.length
@@ -400,6 +391,7 @@ export default function ProductResult() {
                                 })}
                             </Text>
                         ) : null}
+                        {pricing.bulkPricing ? <View style={styles.bulkPricing}><Text style={styles.bulkPricingTitle}>{translate(selectedLanguage, "wholesalePricing")}</Text><View style={styles.bulkPricingRow}>{[["units10to24", pricing.bulkPricing["10-24"]], ["units25to49", pricing.bulkPricing["25-49"]], ["units50Plus", pricing.bulkPricing["50+"]]].map(([label, bulkPrice]) => <View key={String(label)} style={styles.bulkPricingItem}><Text style={styles.bulkPricingLabel}>{translate(selectedLanguage, label as keyof typeof import("../../constants/translations").uiTranslations)}</Text><Text style={styles.bulkPricingValue}>{pricing.currency || "INR"} {Number(bulkPrice).toLocaleString()}</Text></View>)}</View></View> : null}
                         <Text style={styles.finalPriceLabel}>{translate(selectedLanguage, "finalPrice")}</Text>
                         <TextInput
                             value={priceDraft}
@@ -510,6 +502,12 @@ const styles = StyleSheet.create({
     suggestionLabel: { color: "#5F7168", fontSize: 13, fontWeight: "600", marginTop: 16 },
     suggestedPrice: { color: "#B6532C", fontSize: 29, fontWeight: "800", marginTop: 4 },
     recommendedRange: { color: "#173B35", fontSize: 15, fontWeight: "700", marginTop: 8 },
+    bulkPricing: { borderTopColor: "#D8DED8", borderTopWidth: 1, marginTop: 16, paddingTop: 14 },
+    bulkPricingTitle: { color: "#173B35", fontSize: 15, fontWeight: "800" },
+    bulkPricingRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+    bulkPricingItem: { backgroundColor: "#F0F8F4", borderRadius: 10, flex: 1, padding: 9 },
+    bulkPricingLabel: { color: "#59655F", fontSize: 11, textAlign: "center" },
+    bulkPricingValue: { color: "#087F5B", fontSize: 14, fontWeight: "800", marginTop: 6, textAlign: "center" },
     finalPriceLabel: { color: "#173B35", fontSize: 14, fontWeight: "700", marginTop: 16 },
     priceInput: { backgroundColor: "#FFFFFF", borderColor: "#B9CEC0", borderRadius: 10, borderWidth: 1, color: "#173B35", fontSize: 18, marginTop: 7, padding: 12 },
     pricingNote: { color: "#69736E", fontSize: 13, lineHeight: 18, marginTop: 10 },

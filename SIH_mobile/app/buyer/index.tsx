@@ -13,7 +13,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.20.56.14:5000";
+const API_URL = "http://10.5.65.32:5000";
 
 type Product = {
 	_id?: string;
@@ -22,6 +22,7 @@ type Product = {
 	category?: string;
 	images?: string[];
 	pricing?: { suggestedPrice?: number; currency?: string };
+	translations?: { language?: string; title?: string; category?: string; description?: string }[];
 };
 
 const textValue = (value: unknown, fallback = "") =>
@@ -58,7 +59,7 @@ export default function BuyerMarketplace() {
 	const filteredProducts = products.filter((product) => {
 		const query = search.trim().toLowerCase();
 		if (!query) return true;
-		return [product.title, product.category, product.description]
+		return [product.title, product.category, product.description, ...(product.translations || []).flatMap((translation) => [translation.title, translation.category, translation.description])]
 			.some((value) => textValue(value).toLowerCase().includes(query));
 	});
 
@@ -68,6 +69,7 @@ export default function BuyerMarketplace() {
 			: "";
 		const price = item.pricing?.suggestedPrice;
 		const currency = textValue(item.pricing?.currency, "INR");
+		const translation = item.translations?.find((entry) => getLanguageCode(entry.language) === selectedLanguage);
 
 		return (
 			<Pressable
@@ -81,9 +83,9 @@ export default function BuyerMarketplace() {
 					<View style={styles.placeholder}><Text style={styles.placeholderText}>SIH</Text></View>
 				)}
 				<View style={styles.cardBody}>
-					<Text style={styles.productTitle} numberOfLines={1}>{textValue(item.title, translate(selectedLanguage, "untitledProduct"))}</Text>
-					<Text style={styles.category} numberOfLines={1}>{textValue(item.category, translate(selectedLanguage, "handcrafted"))}</Text>
-					<Text style={styles.description} numberOfLines={2}>{textValue(item.description, translate(selectedLanguage, "description"))}</Text>
+					<Text style={styles.productTitle} numberOfLines={1}>{textValue(translation?.title, textValue(item.title, translate(selectedLanguage, "untitledProduct")))}</Text>
+					<Text style={styles.category} numberOfLines={1}>{textValue(translation?.category, textValue(item.category, translate(selectedLanguage, "handcrafted")))}</Text>
+					<Text style={styles.description} numberOfLines={2}>{textValue(translation?.description, textValue(item.description, translate(selectedLanguage, "description")))}</Text>
 					<Text style={styles.price}>{typeof price === "number" ? `${currency} ${price}` : translate(selectedLanguage, "priceNotAvailable")}</Text>
 				</View>
 			</Pressable>

@@ -19,7 +19,7 @@ import {
 } from "expo-audio";
 import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.20.56.14:5000";
+const API_URL = "http://10.5.65.32:5000";
 
 export default function CreateProduct() {
   const { language } = useLocalSearchParams();
@@ -54,7 +54,7 @@ export default function CreateProduct() {
     }
 
     const result = source === "camera"
-      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      ? await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 })
       : await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
           allowsMultipleSelection: true,
@@ -210,6 +210,7 @@ export default function CreateProduct() {
     image: images[0],
     images: JSON.stringify(data.product?.images || []),
     productId: data.product?._id,
+    translations: JSON.stringify(data.product?.translations || data.result.translations || []),
     title: data.result.title,
     category: data.result.category,
     material: data.result.material,

@@ -1,12 +1,13 @@
 export const SUPPORTED_LANGUAGES = [
-  { code: "en", name: "English", native: "English" },
-  { code: "hi", name: "हिन्दी", native: "हिन्दी" },
-  { code: "bn", name: "বাংলা", native: "বাংলা" },
-  { code: "mr", name: "मराठी", native: "मराठी" },
-  { code: "ta", name: "தமிழ்", native: "தமிழ்" },
-  { code: "te", name: "తెలుగు", native: "తెలుగు" },
-  { code: "kn", name: "ಕನ್ನಡ", native: "ಕನ್ನಡ" },
-  { code: "or", name: "ଓଡ଼ିଆ", native: "ଓଡ଼ିଆ" },
+  { code: "en", name: "English", native: "English", english: "English" },
+  { code: "hi", name: "हिन्दी", native: "हिन्दी", english: "Hindi" },
+  { code: "bn", name: "বাংলা", native: "বাংলা", english: "Bengali" },
+  { code: "mr", name: "मराठी", native: "मराठी", english: "Marathi" },
+  { code: "ta", name: "தமிழ்", native: "தமிழ்", english: "Tamil" },
+  { code: "te", name: "తెలుగు", native: "తెలుగు", english: "Telugu" },
+  { code: "kn", name: "ಕನ್ನಡ", native: "ಕನ್ನಡ", english: "Kannada" },
+  { code: "gu", name: "ગુજરાતી", native: "ગુજરાતી", english: "Gujarati" },
+  { code: "or", name: "ଓଡ଼ିଆ", native: "ଓଡ଼ିଆ", english: "Odia" },
 ] as const;
 
 export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGES)[number]["code"];
@@ -82,6 +83,10 @@ export const uiTranslations = {
   generatedProduct: { en: "Generated Product", hi: "जनरेट किया गया उत्पाद", bn: "উৎপন্ন পণ্য", mr: "तयार केलेले उत्पादन", ta: "உருவாக்கப்பட்ட பொருள்", te: "సృష్టించిన ఉత్పత్తి", kn: "ರಚಿಸಲಾದ ಉತ್ಪನ್ನ", or: "ସୃଷ୍ଟି ହୋଇଥିବା ପ୍ରଦର୍ଶନ" },
   reviewGeneratedData: { en: "Review the information generated from your image and voice description.", hi: "अपनी तस्वीर और आवाज़ की व्याख्या से जनरेट की गई जानकारी की समीक्षा करें।", bn: "আপনার ছবি ও কণ্ঠের বর্ণনা থেকে তৈরি তথ্য পর্যালোচনা করুন।", mr: "तुमच्या प्रतिमा व आवाज़ वर्णनातून तयार झालेली माहिती तपासा.", ta: "உங்கள் படம் மற்றும் குரல் விவரிப்பிலிருந்து உருவாக்கப்பட்ட தகவலை மதிப்பாய்வு செய்யவும்.", te: "మీ ఫోటో మరియు వాయిస్ వివరణ నుండి రూపొందిన సమాచారాన్ని సమీక్షించండి.", kn: "ನಿಮ್ಮ ಚಿತ್ರ ಮತ್ತು ಧ್ವನಿ ವಿವರಣೆಯಿಂದ ರಚಿಸಲಾದ ಮಾಹಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ.", or: "ଆପଣଙ୍କ ଚିତ୍ର ଏବଂ ଧ୍ୱନି ବର୍ଣ୍ଣନାରୁ ସୃଷ୍ଟି ହୋଇଥିବା ସୂଚନା ନିରୀକ୍ଷଣ କରନ୍ତୁ।" },
   pricingHeader: { en: "AI Price Recommendation", hi: "AI कीमत सुझाव", bn: "AI দাম সুপারিশ", mr: "AI किंमत शिफारस", ta: "AI விலை பரிந்துரை", te: "AI ధర సిఫార్సు", kn: "AI ಬೆಲೆ ಸಲಹೆ", or: "AI ମୂଲ୍ୟ ପରାମର୍ଶ" },
+  wholesalePricing: { en: "Wholesale B2B prices", hi: "थोक B2B कीमतें", bn: "পাইকারি B2B দাম", mr: "घाऊक B2B किंमती", ta: "மொத்த B2B விலைகள்", te: "హోల్‌సేల్ B2B ధరలు", kn: "ಸಗಟು B2B ಬೆಲೆಗಳು", or: "ହୋଲସେଲ୍ B2B ମୂଲ୍ୟ" },
+  units10to24: { en: "10-24 units", hi: "10-24 इकाइयां", bn: "10-24 ইউনিট", mr: "10-24 युनिट", ta: "10-24 அலகுகள்", te: "10-24 యూనిట్లు", kn: "10-24 ಘಟಕಗಳು", or: "10-24 ୟୁନିଟ୍" },
+  units25to49: { en: "25-49 units", hi: "25-49 इकाइयां", bn: "25-49 ইউনিট", mr: "25-49 युनिट", ta: "25-49 அலகுகள்", te: "25-49 యూనిట్లు", kn: "25-49 ಘಟಕಗಳು", or: "25-49 ୟୁନିଟ୍" },
+  units50Plus: { en: "50+ units", hi: "50+ इकाइयां", bn: "50+ ইউনিট", mr: "50+ युनिट", ta: "50+ அலகுகள்", te: "50+ యూనిట్లు", kn: "50+ ಘಟಕಗಳು", or: "50+ ୟୁନିଟ୍" },
   pricingHint: { en: "Enter the costs and time used to make this product.", hi: "इस उत्पाद को बनाने में खर्च और समय दर्ज करें।", bn: "এই পণ্য তৈরিতে খরচ ও সময় লিখুন।", mr: "हा उत्पादन तयार करण्यासाठी उपयोग झालेला खर्च व वेळ भरा.", ta: "இந்த பொருளை உருவாக்க செலவுகள் மற்றும் நேரத்தை உள்ளிடவும்.", te: "ఈ ఉత్పత్తిని తయారు చేయడానికి ఉపయోగించిన ఖర్చులు మరియు సమయాన్ని నమోదు చేయండి.", kn: "ಈ ಉತ್ಪನ್ನವನ್ನು ತಯಾರಿಸಲು ಬಳಸಿದ ವೆಚ್ಚ ಮತ್ತು ಸಮಯವನ್ನು ನಮೂದಿಸಿ.", or: "ଏହି ପ୍ରଦର୍ଶନ ସୃଷ୍ଟି କରିବାକୁ ବ୍ୟୟ ଏବଂ ସମୟ ଲେଖନ୍ତୁ।" },
   saveProduct: { en: "Save Product", hi: "उत्पाद सहेजें", bn: "পণ্য সংরক্ষণ করুন", mr: "उत्पादन जतन करा", ta: "தயாரிப்பை சேமிக்கவும்", te: "ఉత్పత్తిని సేవ్ చేయండి", kn: "ಉತ್ಪನ್ನವನ್ನು ಉಳಿಸಿ", or: "ପ୍ରଦର୍ଶନ ସଞ୍ଚୟ କରନ୍ତୁ" },
   saveProductMessage: { en: "Your product has been saved successfully.", hi: "उत्पाद सफलतापूर्वक सहेजा गया।", bn: "আপনার পণ্য সফলভাবে সংরক্ষিত হয়েছে।", mr: "तुमचे उत्पादन यशस्वीरित्या जतन झाले.", ta: "உங்கள் பொருள் வெற்றிகரமாக சேமிக்கப்பட்டது.", te: "మీ ఉత్పత్తి విజయవంతంగా సేవ్ అయింది.", kn: "ನಿಮ್ಮ ಉತ್ಪನ್ನ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಯಿತು.", or: "ଆପଣଙ୍କ ପ୍ରଦର୍ଶନ ସଫଳତାର ସହିତ ସଞ୍ଚିତ ହୋଇଛି।" },
@@ -176,7 +181,7 @@ export const translate = (
 ) => {
   const code = getLanguageCode(language);
   const keyText = uiTranslations[key];
-  const template = keyText?.[code] ?? keyText?.en ?? String(key);
+  const template = (keyText as Record<string, string>)[code] ?? keyText?.en ?? String(key);
 
   return template.replace(/\{(\w+)\}/g, (_, token: string) => values[token] ?? `{${token}}`);
 };
