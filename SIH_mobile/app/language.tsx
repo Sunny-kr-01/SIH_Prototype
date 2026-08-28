@@ -8,17 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { router } from "expo-router";
-
-const languages = [
-  { name: "English", code: "en" },
-  { name: "हिन्दी", code: "hi" },
-  { name: "বাংলা", code: "bn" },
-  { name: "मराठी", code: "mr" },
-  { name: "தமிழ்", code: "ta" },
-  { name: "తెలుగు", code: "te" },
-  { name: "ಕನ್ನಡ", code: "kn" },
-  { name: "ଓଡ଼ିଆ", code: "or" },
-];
+import { SUPPORTED_LANGUAGES, translate } from "../constants/translations";
 
 export default function LanguageScreen() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -35,18 +25,14 @@ export default function LanguageScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.logo}>SIH</Text>
+        <Text style={styles.logo}>{translate(selectedLanguage, "appTitle")}</Text>
 
-        <Text style={styles.title}>
-          Choose your language
-        </Text>
+        <Text style={styles.title}>{translate(selectedLanguage, "chooseLanguage")}</Text>
 
-        <Text style={styles.subtitle}>
-          Select the language you are most comfortable with.
-        </Text>
+        <Text style={styles.subtitle}>{translate(selectedLanguage, "chooseLanguageSubtitle")}</Text>
 
         <View style={styles.languageList}>
-          {languages.map((language) => (
+          {SUPPORTED_LANGUAGES.map((language) => (
             <TouchableOpacity
               key={language.code}
               style={[
@@ -54,9 +40,7 @@ export default function LanguageScreen() {
                 selectedLanguage === language.code &&
                   styles.selectedLanguage,
               ]}
-              onPress={() =>
-                setSelectedLanguage(language.code)
-              }
+              onPress={() => setSelectedLanguage(language.code)}
               activeOpacity={0.8}
             >
               <Text
@@ -77,9 +61,7 @@ export default function LanguageScreen() {
           onPress={continueToRole}
           activeOpacity={0.8}
         >
-          <Text style={styles.continueText}>
-            Continue
-          </Text>
+          <Text style={styles.continueText}>{translate(selectedLanguage, "continue")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -65,6 +65,8 @@ IMPORTANT:
   and information reasonably inferred from the image.
 - Generate a polished English description.
 - Generate a natural Hindi description.
+- Generate a natural product description in the detected spoken language.
+- The detected-language description must be a product listing, not a transcript.
 - Provide useful e-commerce keywords.
 `
           },
@@ -133,6 +135,11 @@ IMPORTANT:
             description: "Professional e-commerce description in Hindi"
           },
 
+          descriptionOriginal: {
+            type: Type.STRING,
+            description: "Professional e-commerce description in the detected spoken language"
+          },
+
           keywords: {
             type: Type.ARRAY,
             items: {
@@ -151,6 +158,7 @@ IMPORTANT:
           "craft",
           "descriptionEnglish",
           "descriptionHindi",
+          "descriptionOriginal",
           "keywords"
         ]
       }

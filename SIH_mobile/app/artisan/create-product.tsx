@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -16,13 +17,15 @@ import {
   AudioModule,
   RecordingPresets,
 } from "expo-audio";
+import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.5.65.32:5000";
+const API_URL = "http://10.20.56.14:5000";
 
 export default function CreateProduct() {
   const { language } = useLocalSearchParams();
+  const selectedLanguage = getLanguageCode(language);
 
-  const [image, setImage] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [recording, setRecording] = useState(false);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -30,29 +33,61 @@ export default function CreateProduct() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   // -----------------------------
-  // SELECT PRODUCT IMAGE
   // -----------------------------
-  const chooseImage = async () => {
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+  // SELECT OR CAPTURE PRODUCT IMAGES
+  // -----------------------------
+  const addImages = async (source: "camera" | "gallery") => {
+    if (images.length >= 4) return;
 
-    if (!permission.granted) {
-      Alert.alert(
-        "Permission required",
-        "Please allow access to your photos."
-      );
+    if (source === "camera") {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(translate(selectedLanguage, "permissionRequired"), translate(selectedLanguage, "allowCamera"));
+        return;
+      }
+    } else {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(translate(selectedLanguage, "permissionRequired"), translate(selectedLanguage, "allowPhotos"));
+        return;
+      }
+    }
+
+    const result = source === "camera"
+      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsMultipleSelection: true,
+          selectionLimit: 4 - images.length,
+          quality: 0.8,
+        });
+
+    if (!result.canceled) {
+      const selectedUris = result.assets.map((asset) => asset.uri);
+      setImages((current) => [...current, ...selectedUris].slice(0, 4));
+    }
+  };
+
+  const chooseImage = async () => {
+    if (images.length >= 4) {
+      Alert.alert(translate(selectedLanguage, "photoLimitReached"), translate(selectedLanguage, "photoLimitMessage"));
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+    if (Platform.OS === "web") {
+      await addImages("gallery");
+      return;
     }
+
+    Alert.alert(translate(selectedLanguage, "addProductPhotos"), translate(selectedLanguage, "choosePhotoSource"), [
+      { text: translate(selectedLanguage, "takePhoto"), onPress: () => addImages("camera") },
+      { text: translate(selectedLanguage, "chooseFromGallery"), onPress: () => addImages("gallery") },
+      { text: translate(selectedLanguage, "cancel"), style: "cancel" },
+    ]);
+  };
+
+  const removeImage = (uri: string) => {
+    setImages((current) => current.filter((item) => item !== uri));
   };
 
   // -----------------------------
@@ -64,8 +99,8 @@ export default function CreateProduct() {
 
     if (!permission.granted) {
       Alert.alert(
-        "Permission required",
-        "Please allow microphone access."
+        translate(selectedLanguage, "permissionRequired"),
+        translate(selectedLanguage, "allowMicrophone")
       );
       return;
     }
@@ -80,8 +115,8 @@ export default function CreateProduct() {
       console.error("Recording start error:", error);
 
       Alert.alert(
-        "Recording error",
-        "Could not start the recording."
+        translate(selectedLanguage, "recordingError"),
+        translate(selectedLanguage, "startRecordingError")
       );
     }
   };
@@ -99,8 +134,8 @@ export default function CreateProduct() {
       console.error("Recording stop error:", error);
 
       Alert.alert(
-        "Recording error",
-        "Could not stop the recording."
+        translate(selectedLanguage, "recordingError"),
+        translate(selectedLanguage, "stopRecordingError")
       );
     }
   };
@@ -109,18 +144,18 @@ export default function CreateProduct() {
   // SEND TO BACKEND
   // -----------------------------
   const generateListing = async () => {
-    if (!image) {
+    if (!images.length) {
       Alert.alert(
-        "Missing image",
-        "Please add a product image first."
+        translate(selectedLanguage, "missingImage"),
+        translate(selectedLanguage, "addImageFirst")
       );
       return;
     }
 
     if (!audioUri) {
       Alert.alert(
-        "Missing audio",
-        "Please record a description of your product."
+        translate(selectedLanguage, "missingAudio"),
+        translate(selectedLanguage, "recordDescriptionFirst")
       );
       return;
     }
@@ -130,11 +165,11 @@ export default function CreateProduct() {
 
       const formData = new FormData();
 
-      formData.append("image", {
-        uri: image,
-        name: "product.jpg",
+      images.forEach((uri, index) => formData.append("image", {
+        uri,
+        name: `product-${index + 1}.jpg`,
         type: "image/jpeg",
-      } as any);
+      } as any));
 
       formData.append("audio", {
         uri: audioUri,
@@ -144,9 +179,7 @@ export default function CreateProduct() {
 
       formData.append(
         "language",
-        typeof language === "string"
-          ? language
-          : "en"
+        selectedLanguage
       );
 
       console.log("Sending product to:", API_URL);
@@ -167,14 +200,15 @@ export default function CreateProduct() {
       if (!response.ok) {
         throw new Error(
           data.error ||
-            "Failed to generate product listing"
+            translate(selectedLanguage, "generationFailed")
         );
       }
 
       router.push({
   pathname: "/artisan/result",
   params: {
-    image,
+    image: images[0],
+    images: JSON.stringify(data.product?.images || []),
     productId: data.product?._id,
     title: data.result.title,
     category: data.result.category,
@@ -184,7 +218,9 @@ export default function CreateProduct() {
     transcriptOriginal: data.result.transcriptOriginal,
     descriptionEnglish: data.result.descriptionEnglish,
     descriptionHindi: data.result.descriptionHindi,
+    descriptionOriginal: data.result.descriptionOriginal,
     keywords: data.result.keywords.join("|||"),
+    language: selectedLanguage,
   },
 });
 
@@ -199,9 +235,8 @@ export default function CreateProduct() {
       );
 
       Alert.alert(
-        "Connection Error",
-        error?.message ||
-          "Could not connect to the backend."
+        translate(selectedLanguage, "connectionError"),
+        error?.message || translate(selectedLanguage, "backendConnectionError")
       );
     } finally {
       setGenerating(false);
@@ -213,58 +248,48 @@ export default function CreateProduct() {
       style={styles.screen}
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.title}>
-        Create Product
-      </Text>
+      <Text style={styles.title}>{translate(selectedLanguage, "createProduct")}</Text>
 
-      <Text style={styles.subtitle}>
-        Add a product image and describe your
-        product using your voice.
-      </Text>
+      <Text style={styles.subtitle}>{translate(selectedLanguage, "createProductDescription")}</Text>
 
       {/* IMAGE */}
 
-      <Text style={styles.sectionTitle}>
-        1. Product Image
-      </Text>
+      <Text style={styles.sectionTitle}>1. {translate(selectedLanguage, "productImage")}</Text>
 
       <TouchableOpacity
         style={styles.imageBox}
         onPress={chooseImage}
         activeOpacity={0.8}
       >
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.preview}
-          />
+        {images.length ? (
+          <View style={styles.previewGrid}>
+            {images.map((uri, index) => (
+              <TouchableOpacity key={uri} onPress={() => removeImage(uri)} style={styles.previewItem}>
+                <Image source={{ uri }} style={styles.preview} />
+                <Text style={styles.removePhoto}>×</Text>
+                {index === 0 && <Text style={styles.primaryPhoto}>{translate(selectedLanguage, "primaryPhoto")}</Text>}
+              </TouchableOpacity>
+            ))}
+            {images.length < 4 && <Text style={styles.addMoreHint}>{translate(selectedLanguage, "addMorePhotos")}</Text>}
+          </View>
         ) : (
           <>
             <Text style={styles.imageIcon}>
               📸
             </Text>
 
-            <Text style={styles.imageText}>
-              Choose Product Image
-            </Text>
+            <Text style={styles.imageText}>{translate(selectedLanguage, "chooseProductImage")}</Text>
 
-            <Text style={styles.hint}>
-              Tap to select from gallery
-            </Text>
+            <Text style={styles.hint}>{translate(selectedLanguage, "choosePhotoSource")}</Text>
           </>
         )}
       </TouchableOpacity>
 
       {/* AUDIO */}
 
-      <Text style={styles.sectionTitle}>
-        2. Artisan Description
-      </Text>
+      <Text style={styles.sectionTitle}>2. {translate(selectedLanguage, "artisanDescriptionTitle")}</Text>
 
-      <Text style={styles.descriptionHint}>
-        Explain your product naturally in your
-        own language.
-      </Text>
+      <Text style={styles.descriptionHint}>{translate(selectedLanguage, "describeInOwnLanguage")}</Text>
 
       <TouchableOpacity
         style={[
@@ -285,8 +310,8 @@ export default function CreateProduct() {
 
         <Text style={styles.recordText}>
           {recording
-            ? "Stop Recording"
-            : "Start Recording"}
+            ? translate(selectedLanguage, "stopRecording")
+            : translate(selectedLanguage, "startRecording")}
         </Text>
       </TouchableOpacity>
 
@@ -294,18 +319,12 @@ export default function CreateProduct() {
         <View style={styles.recordingStatus}>
           <View style={styles.recordingDot} />
 
-          <Text
-            style={styles.recordingStatusText}
-          >
-            Recording...
-          </Text>
+          <Text style={styles.recordingStatusText}>{translate(selectedLanguage, "recording")}</Text>
         </View>
       )}
 
       {audioUri && !recording && (
-        <Text style={styles.recordedText}>
-          ✓ Voice recording ready
-        </Text>
+        <Text style={styles.recordedText}>✓ {translate(selectedLanguage, "voiceReady")}</Text>
       )}
 
       {/* GENERATE */}
@@ -327,14 +346,10 @@ export default function CreateProduct() {
               style={styles.loader}
             />
 
-            <Text style={styles.generateText}>
-              Generating...
-            </Text>
+            <Text style={styles.generateText}>{translate(selectedLanguage, "generating")}</Text>
           </>
         ) : (
-          <Text style={styles.generateText}>
-            Generate Product Listing
-          </Text>
+          <Text style={styles.generateText}>{translate(selectedLanguage, "generateProductListing")}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -415,6 +430,51 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+
+  previewGrid: {
+    width: "100%",
+    height: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    padding: 6,
+  },
+
+  previewItem: {
+    width: "48%",
+    height: "48%",
+    position: "relative",
+  },
+
+  removePhoto: {
+    position: "absolute",
+    right: 4,
+    top: 2,
+    color: "#FFFFFF",
+    backgroundColor: "#B33A2B",
+    borderRadius: 12,
+    fontSize: 20,
+    lineHeight: 22,
+    textAlign: "center",
+    width: 23,
+  },
+
+  primaryPhoto: {
+    position: "absolute",
+    bottom: 4,
+    left: 4,
+    color: "#FFFFFF",
+    backgroundColor: "#087F5B",
+    fontSize: 11,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+
+  addMoreHint: {
+    alignSelf: "center",
+    color: "#087F5B",
+    fontSize: 12,
   },
 
   recordButton: {

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { getLanguageCode, getLanguageName, translate } from "../../constants/translations";
 
-const API_URL = "http://10.5.65.32:5000";
+const API_URL = "http://10.20.56.14:5000";
 
 export default function ArtisanHome() {
     const { language } = useLocalSearchParams<{ language?: string }>();
-    const isHindi = language === "hi";
+    const selectedLanguage = getLanguageCode(language);
     const [productCount, setProductCount] = useState<number | null>(null);
 
     useEffect(() => {
@@ -18,25 +19,22 @@ export default function ArtisanHome() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.greeting}>{isHindi ? "स्वागत है, कारीगर" : "Welcome, Artisan"}</Text>
+            <Text style={styles.greeting}>{translate(selectedLanguage, "welcomeArtisan")}</Text>
 
-            <Text style={styles.subtitle}>
-                {isHindi ? "AI के साथ अपने उत्पाद बनाएं और संभालें।" : "Create and manage your products with AI."}
-            </Text>
+            <Text style={styles.subtitle}>{translate(selectedLanguage, "artisanHomeSubtitle")}</Text>
 
             <View style={styles.statsCard}>
-                <Text style={styles.statsLabel}>{isHindi ? "कुल लिस्टिंग" : "Total listings"}</Text>
+                <Text style={styles.statsLabel}>{translate(selectedLanguage, "totalListings")}</Text>
                 {productCount === null ? <ActivityIndicator color="#087F5B" /> : <Text style={styles.statsValue}>{productCount}</Text>}
-                <Text style={styles.activeText}>{isHindi ? "सभी लिस्टिंग सक्रिय हैं" : "All saved listings are Active"}</Text>
+                <Text style={styles.activeText}>{translate(selectedLanguage, "allActive")}</Text>
             </View>
 
-            {/* CREATE PRODUCT */}
             <TouchableOpacity
                 style={styles.card}
                 onPress={() =>
                     router.push({
                         pathname: "/artisan/create-product",
-                        params: { language },
+                        params: { language: selectedLanguage },
                     })
                 }
                 activeOpacity={0.8}
@@ -44,34 +42,27 @@ export default function ArtisanHome() {
                 <Text style={styles.icon}>📸</Text>
 
                 <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>{isHindi ? "उत्पाद बनाएं" : "Create Product"}</Text>
+                    <Text style={styles.cardTitle}>{translate(selectedLanguage, "createProduct")}</Text>
 
-                    <Text style={styles.cardDescription}>
-                        {isHindi ? "उत्पाद की तस्वीर डालें और आवाज़ में विवरण दें।" : "Upload an image and describe it using your voice."}
-                    </Text>
+                    <Text style={styles.cardDescription}>{translate(selectedLanguage, "createProductDescription")}</Text>
                 </View>
             </TouchableOpacity>
 
-            {/* MY PRODUCTS */}
             <TouchableOpacity
                 style={styles.card}
-                onPress={() => router.push({ pathname: "/artisan/products", params: { language } })}
+                onPress={() => router.push({ pathname: "/artisan/products", params: { language: selectedLanguage } })}
                 activeOpacity={0.8}
             >
                 <Text style={styles.icon}>📦</Text>
 
                 <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>{isHindi ? "मेरे उत्पाद" : "My Products"}</Text>
+                    <Text style={styles.cardTitle}>{translate(selectedLanguage, "myProducts")}</Text>
 
-                    <Text style={styles.cardDescription}>
-                        {isHindi ? "अपने उत्पाद लिस्टिंग देखें।" : "View your saved product listings."}
-                    </Text>
+                    <Text style={styles.cardDescription}>{translate(selectedLanguage, "myProductsDescription")}</Text>
                 </View>
             </TouchableOpacity>
 
-            <Text style={styles.language}>
-                {isHindi ? "चयनित भाषा: हिन्दी" : `Selected language: ${language || "English"}`}
-            </Text>
+            <Text style={styles.language}>{translate(selectedLanguage, "selectedLanguage").replace("{language}", getLanguageName(selectedLanguage))}</Text>
         </View>
     );
 }

@@ -1,33 +1,31 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { getLanguageCode, translate } from "../constants/translations";
 
 export default function RoleScreen() {
   const { language } = useLocalSearchParams();
+  const selectedLanguage = getLanguageCode(language);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>How will you use SIH?</Text>
+      <Text style={styles.title}>{translate(selectedLanguage, "howUseSIH")}</Text>
 
-      <Text style={styles.subtitle}>
-        Choose an option to continue
-      </Text>
+      <Text style={styles.subtitle}>{translate(selectedLanguage, "chooseOption")}</Text>
 
       <TouchableOpacity
         style={styles.card}
         onPress={() =>
           router.push({
             pathname: "/artisan",
-            params: { language },
+            params: { language: selectedLanguage },
           })
         }
       >
         <Text style={styles.emoji}>🎨</Text>
 
         <View>
-          <Text style={styles.cardTitle}>I'm an Artisan</Text>
-          <Text style={styles.cardDescription}>
-            Create and manage your products
-          </Text>
+          <Text style={styles.cardTitle}>{translate(selectedLanguage, "artisan")}</Text>
+          <Text style={styles.cardDescription}>{translate(selectedLanguage, "artisanDescription")}</Text>
         </View>
       </TouchableOpacity>
 
@@ -36,17 +34,15 @@ export default function RoleScreen() {
         onPress={() =>
           router.push({
             pathname: "/buyer",
-            params: { language },
+            params: { language: selectedLanguage },
           })
         }
       >
         <Text style={styles.emoji}>🛍️</Text>
 
         <View>
-          <Text style={styles.cardTitle}>I'm a Buyer</Text>
-          <Text style={styles.cardDescription}>
-            Discover products from artisans
-          </Text>
+          <Text style={styles.cardTitle}>{translate(selectedLanguage, "buyer")}</Text>
+          <Text style={styles.cardDescription}>{translate(selectedLanguage, "buyerDescription")}</Text>
         </View>
       </TouchableOpacity>
     </View>

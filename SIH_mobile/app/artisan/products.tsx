@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.5.65.32:5000";
+const API_URL = "http://10.20.56.14:5000";
 type Product = { _id?: string; title?: string; category?: string; description?: string; images?: string[]; pricing?: { suggestedPrice?: number; currency?: string } };
 const text = (item: unknown, fallback = "") => typeof item === "string" ? item.trim() : fallback;
 
 export default function ArtisanProducts() {
   const { language } = useLocalSearchParams<{ language?: string }>();
-  const isHindi = language === "hi";
+  const selectedLanguage = getLanguageCode(language);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -23,14 +24,14 @@ export default function ArtisanProducts() {
   const renderProduct = ({ item }: { item: Product }) => {
     const image = Array.isArray(item.images) ? text(item.images[0]) : "";
     const price = item.pricing?.suggestedPrice;
-    return <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push({ pathname: "/artisan/product", params: { product: JSON.stringify(item), language: language || "en" } })}>
+    return <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push({ pathname: "/artisan/product", params: { product: JSON.stringify(item), language: selectedLanguage } })}>
       {image ? <Image source={{ uri: image }} style={styles.image} /> : <View style={styles.placeholder}><Text style={styles.placeholderText}>SIH</Text></View>}
-      <View style={styles.body}><Text style={styles.title} numberOfLines={1}>{text(item.title, isHindi ? "उत्पाद" : "Untitled product")}</Text><Text style={styles.category}>{text(item.category, isHindi ? "शिल्प" : "Handcrafted")}</Text><Text style={styles.price}>{typeof price === "number" ? `${text(item.pricing?.currency, "INR")} ${price}` : (isHindi ? "कीमत उपलब्ध नहीं" : "Price not available")}</Text><Text style={styles.status}>{isHindi ? "सक्रिय" : "Active"}</Text></View>
+      <View style={styles.body}><Text style={styles.title} numberOfLines={1}>{text(item.title, translate(selectedLanguage, "untitledProduct"))}</Text><Text style={styles.category}>{text(item.category, translate(selectedLanguage, "handcrafted"))}</Text><Text style={styles.price}>{typeof price === "number" ? `${text(item.pricing?.currency, "INR")} ${price}` : translate(selectedLanguage, "priceNotAvailable")}</Text><Text style={styles.status}>{translate(selectedLanguage, "active")}</Text></View>
     </Pressable>;
   };
 
-  return <SafeAreaView style={styles.screen}><View style={styles.header}><Pressable onPress={() => router.back()}><Text style={styles.back}>‹ {isHindi ? "वापस" : "Back"}</Text></Pressable><Text style={styles.heading}>{isHindi ? "मेरे उत्पाद" : "My Products"}</Text><Text style={styles.subtitle}>{isHindi ? "आपकी सभी सहेजी गई लिस्टिंग" : "Your saved product listings"}</Text></View>
-    {loading ? <View style={styles.state}><ActivityIndicator size="large" color="#087F5B" /><Text style={styles.stateText}>{isHindi ? "उत्पाद लोड हो रहे हैं..." : "Loading products..."}</Text></View> : failed ? <View style={styles.state}><Text style={styles.stateTitle}>{isHindi ? "उत्पाद लोड नहीं हो सके" : "Unable to load products"}</Text><Pressable onPress={loadProducts} style={styles.retry}><Text style={styles.retryText}>{isHindi ? "फिर कोशिश करें" : "Retry"}</Text></Pressable></View> : products.length === 0 ? <View style={styles.state}><Text style={styles.stateTitle}>{isHindi ? "अभी कोई उत्पाद नहीं" : "No products yet"}</Text><Text style={styles.stateText}>{isHindi ? "नई लिस्टिंग बनाने के लिए डैशबोर्ड पर जाएं।" : "Create a new listing from the dashboard."}</Text></View> : <FlatList data={products} keyExtractor={(item, index) => item._id || String(index)} renderItem={renderProduct} contentContainerStyle={styles.list} />}
+  return <SafeAreaView style={styles.screen}><View style={styles.header}><Pressable onPress={() => router.back()}><Text style={styles.back}>‹ {translate(selectedLanguage, "back")}</Text></Pressable><Text style={styles.heading}>{translate(selectedLanguage, "myProducts")}</Text><Text style={styles.subtitle}>{translate(selectedLanguage, "myProductsDescription")}</Text></View>
+    {loading ? <View style={styles.state}><ActivityIndicator size="large" color="#087F5B" /><Text style={styles.stateText}>{translate(selectedLanguage, "loadingProducts")}</Text></View> : failed ? <View style={styles.state}><Text style={styles.stateTitle}>{translate(selectedLanguage, "unableToLoad")}</Text><Pressable onPress={loadProducts} style={styles.retry}><Text style={styles.retryText}>{translate(selectedLanguage, "retry")}</Text></Pressable></View> : products.length === 0 ? <View style={styles.state}><Text style={styles.stateTitle}>{translate(selectedLanguage, "noProducts")}</Text><Text style={styles.stateText}>{translate(selectedLanguage, "productCreatedText")}</Text></View> : <FlatList data={products} keyExtractor={(item, index) => item._id || String(index)} renderItem={renderProduct} contentContainerStyle={styles.list} />}
   </SafeAreaView>;
 }
 

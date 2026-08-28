@@ -72,6 +72,28 @@ router.post(
                     otherCosts
                 });
 
+            if (Number.isFinite(materialCost)) {
+                pricingData.materials = [{
+                    name: "Provided materials",
+                    quantity: 1,
+                    unit: "product",
+                    totalCost: materialCost
+                }];
+            }
+
+            if (Number.isFinite(workingDays) || Number.isFinite(hoursPerDay)) {
+                pricingData.labor = {
+                    ...pricingData.labor,
+                    ...(Number.isFinite(workingDays) ? { days: workingDays } : {}),
+                    ...(Number.isFinite(hoursPerDay) ? { hoursPerDay } : {})
+                };
+                delete pricingData.labor.estimatedHours;
+            }
+
+            if (Number.isFinite(otherCosts)) {
+                pricingData.otherCosts = otherCosts;
+            }
+
             const price =
                 calculateB2BPrice(pricingData);
 

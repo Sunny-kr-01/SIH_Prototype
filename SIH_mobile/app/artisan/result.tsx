@@ -18,23 +18,30 @@ import {
     RecordingPresets,
     useAudioRecorder,
 } from "expo-audio";
+import { getLanguageCode, getNativeLanguageName, translate } from "../../constants/translations";
 
-const API_URL = "http://10.5.65.32:5000";
+const API_URL = "http://10.20.56.14:5000";
 
 export default function ProductResult() {
     const params = useLocalSearchParams();
+    const selectedLanguage = getLanguageCode(params.language || "en");
 
-    const title = params.title || "Untitled Product";
-    const category = params.category || "Unknown";
-    const material = params.material || "Not specified";
-    const craft = params.craft || "Not specified";
-    const language = params.detectedLanguage || "Unknown";
+    const title = params.title || translate(selectedLanguage, "untitledProduct");
+    const category = params.category || translate(selectedLanguage, "unknown");
+    const material = params.material || translate(selectedLanguage, "notSpecified");
+    const craft = params.craft || translate(selectedLanguage, "notSpecified");
+    const language = params.detectedLanguage || translate(selectedLanguage, "unknown");
     const transcript = params.transcriptOriginal || "";
     const descriptionEnglish =
         params.descriptionEnglish || "";
     const descriptionHindi =
         params.descriptionHindi || "";
+    const descriptionOriginal =
+        params.descriptionOriginal || transcript;
+    const generatedLanguage = String(language);
+    const hasDistinctGeneratedLanguage = !["en", "english", "hi", "hindi"].includes(generatedLanguage.toLowerCase());
     const image = params.image ? String(params.image) : "";
+    const catalogImages = params.images ? JSON.parse(String(params.images)) : [];
     const productId = params.productId ? String(params.productId) : "";
 
     const keywords = params.keywords
@@ -52,13 +59,14 @@ export default function ProductResult() {
     const [pricingError, setPricingError] = useState("");
     const [recording, setRecording] = useState(false);
     const [audioUri, setAudioUri] = useState<string | null>(null);
+    const [descriptionLanguage, setDescriptionLanguage] = useState<"en" | "hi" | "generated">("en");
     const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
     const getPriceSuggestion = async (voiceUri?: string | null) => {
         const hasFormValue = [materialCost, workingDays, hoursPerDay, otherCosts]
             .some((value) => value.trim());
         if (!productId || (!hasFormValue && !voiceUri)) {
-            setPricingError("Fill in at least one cost field or record your voice to get a recommendation.");
+            setPricingError(translate(selectedLanguage, "fillAtLeastOneCost"));
             return;
         }
 
@@ -109,12 +117,12 @@ export default function ProductResult() {
             });
             const data = await response.json();
             if (!response.ok || !data.success || !data.price?.suggestedPrice) {
-                throw new Error(data.error || "Unable to calculate price");
+                throw new Error(data.error || translate(selectedLanguage, "unableToCalculatePrice"));
             }
             setPricing(data.price);
             setPriceDraft(String(data.price.suggestedPrice));
         } catch (error: any) {
-            setPricingError(error?.message || "Unable to calculate price");
+            setPricingError(error?.message || translate(selectedLanguage, "unableToCalculatePrice"));
         } finally {
             setPricingLoading(false);
         }
@@ -127,14 +135,17 @@ export default function ProductResult() {
                 setRecording(false);
                 setAudioUri(recorder.uri);
             } catch {
-                setPricingError("Could not stop recording.");
+                setPricingError(translate(selectedLanguage, "stopRecordingError"));
             }
             return;
         }
 
         const permission = await AudioModule.requestRecordingPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert("Permission required", "Please allow microphone access.");
+            Alert.alert(
+                translate(selectedLanguage, "permissionRequired"),
+                translate(selectedLanguage, "allowMicrophone")
+            );
             return;
         }
 
@@ -144,14 +155,17 @@ export default function ProductResult() {
             setRecording(true);
             setAudioUri(null);
         } catch {
-            setPricingError("Could not start recording.");
+            setPricingError(translate(selectedLanguage, "startRecordingError"));
         }
     };
 
     const applyPrice = () => {
         const selectedPrice = Number(priceDraft);
         if (!Number.isFinite(selectedPrice) || selectedPrice < 0) {
-            Alert.alert("Invalid price", "Enter a valid price before saving.");
+            Alert.alert(
+                translate(selectedLanguage, "invalidPriceTitle"),
+                translate(selectedLanguage, "enterValidPrice")
+            );
             return false;
         }
         return true;
@@ -180,9 +194,16 @@ export default function ProductResult() {
                         title: String(title),
                         description: String(descriptionHindi),
                     },
+                    ...(hasDistinctGeneratedLanguage ? [{
+                        language: generatedLanguage,
+                        title: String(title),
+                        description: String(descriptionOriginal),
+                    }] : []),
                 ],
 
-                images: image ? [image] : [],
+                images: Array.isArray(catalogImages) && catalogImages.length
+                    ? catalogImages
+                    : image ? [image] : [],
 
                 pricing: pricing
                     ? {
@@ -217,17 +238,17 @@ export default function ProductResult() {
 
             if (!response.ok) {
                 throw new Error(
-                    data.error || "Failed to save product"
+                    data.error || translate(selectedLanguage, "saveProduct")
                 );
             }
 
             Alert.alert(
-                "Product Saved 🎉",
-                "Your product has been saved successfully.",
+                translate(selectedLanguage, "productSavedTitle"),
+                translate(selectedLanguage, "saveProductMessage"),
                 [
                     {
-                        text: "OK",
-                        onPress: () => router.replace("/artisan"),
+                        text: translate(selectedLanguage, "ok"),
+                        onPress: () => router.replace({ pathname: "/artisan", params: { language: selectedLanguage } }),
                     },
                 ]
             );
@@ -235,8 +256,8 @@ export default function ProductResult() {
             console.error("SAVE PRODUCT ERROR:", error);
 
             Alert.alert(
-                "Save Failed",
-                error?.message || "Could not save the product."
+                translate(selectedLanguage, "saveFailedTitle"),
+                error?.message || translate(selectedLanguage, "couldNotSaveProduct")
             );
         } finally {
             setSaving(false);
@@ -250,14 +271,9 @@ export default function ProductResult() {
         >
             {/* HEADER */}
 
-            <Text style={styles.heading}>
-                Generated Product
-            </Text>
+            <Text style={styles.heading}>{translate(selectedLanguage, "generatedProduct")}</Text>
 
-            <Text style={styles.subheading}>
-                Review the information generated from
-                your image and voice description.
-            </Text>
+            <Text style={styles.subheading}>{translate(selectedLanguage, "reviewGeneratedData")}</Text>
 
             {image ? (
                 <Image
@@ -269,9 +285,7 @@ export default function ProductResult() {
             {/* TITLE */}
 
             <View style={styles.card}>
-                <Text style={styles.label}>
-                    Product Title
-                </Text>
+                <Text style={styles.label}>{translate(selectedLanguage, "productTitle")}</Text>
 
                 <Text style={styles.title}>
                     {title}
@@ -281,38 +295,22 @@ export default function ProductResult() {
             {/* BASIC INFO */}
 
             <View style={styles.card}>
-                <Text style={styles.cardHeading}>
-                    Product Information
-                </Text>
+                <Text style={styles.cardHeading}>{translate(selectedLanguage, "productInfo")}</Text>
 
-                <InfoRow
-                    label="Category"
-                    value={String(category)}
-                />
+                <InfoRow label={translate(selectedLanguage, "category")} value={String(category)} />
 
-                <InfoRow
-                    label="Material"
-                    value={String(material)}
-                />
+                <InfoRow label={translate(selectedLanguage, "material")} value={String(material)} />
 
-                <InfoRow
-                    label="Craft"
-                    value={String(craft)}
-                />
+                <InfoRow label={translate(selectedLanguage, "craft")} value={String(craft)} />
 
-                <InfoRow
-                    label="Detected Language"
-                    value={String(language)}
-                />
+                <InfoRow label={translate(selectedLanguage, "detectedLanguage")} value={String(language)} />
             </View>
 
             {/* TRANSCRIPT */}
 
             {transcript ? (
                 <View style={styles.card}>
-                    <Text style={styles.cardHeading}>
-                        Artisan&apos;s Description
-                    </Text>
+                    <Text style={styles.cardHeading}>{translate(selectedLanguage, "artisanDescriptionTitle")}</Text>
 
                     <Text style={styles.languageBadge}>
                         {String(language)}
@@ -324,27 +322,18 @@ export default function ProductResult() {
                 </View>
             ) : null}
 
-            {/* ENGLISH DESCRIPTION */}
-
             <View style={styles.card}>
-                <Text style={styles.cardHeading}>
-                    English Description
-                </Text>
-
+                <View style={styles.languageTabs}>
+                    {(["en", "hi", ...(hasDistinctGeneratedLanguage ? ["generated" as const] : [])] as const).map((tab) => (
+                        <Pressable key={tab} onPress={() => setDescriptionLanguage(tab)} style={[styles.languageTab, descriptionLanguage === tab && styles.languageTabActive]}>
+                            <Text style={[styles.languageTabText, descriptionLanguage === tab && styles.languageTabTextActive]}>
+                                {getNativeLanguageName(tab === "generated" ? generatedLanguage : tab)}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
                 <Text style={styles.bodyText}>
-                    {String(descriptionEnglish)}
-                </Text>
-            </View>
-
-            {/* HINDI DESCRIPTION */}
-
-            <View style={styles.card}>
-                <Text style={styles.cardHeading}>
-                    Hindi Description
-                </Text>
-
-                <Text style={styles.bodyText}>
-                    {String(descriptionHindi)}
+                    {descriptionLanguage === "en" ? String(descriptionEnglish) : descriptionLanguage === "hi" ? String(descriptionHindi) : String(descriptionOriginal)}
                 </Text>
             </View>
 
@@ -352,9 +341,7 @@ export default function ProductResult() {
 
             {keywords.length > 0 && (
                 <View style={styles.card}>
-                    <Text style={styles.cardHeading}>
-                        Keywords
-                    </Text>
+                    <Text style={styles.cardHeading}>{translate(selectedLanguage, "keywords")}</Text>
 
                     <View style={styles.keywordContainer}>
                         {keywords.map((keyword, index) => (
@@ -374,54 +361,54 @@ export default function ProductResult() {
             {/* ACTION */}
 
             <View style={styles.pricingCard}>
-                <Text style={styles.cardHeading}>AI Price Recommendation</Text>
-                <Text style={styles.pricingHint}>
-                    Enter the costs and time used to make this product.
-                </Text>
-                <TextInput value={materialCost} onChangeText={setMaterialCost} keyboardType="decimal-pad" placeholder="Material cost (INR)" placeholderTextColor="#8A8A84" style={styles.pricingInput} />
-                <TextInput value={workingDays} onChangeText={setWorkingDays} keyboardType="decimal-pad" placeholder="Working days" placeholderTextColor="#8A8A84" style={styles.pricingInput} />
-                <TextInput value={hoursPerDay} onChangeText={setHoursPerDay} keyboardType="decimal-pad" placeholder="Working hours per day" placeholderTextColor="#8A8A84" style={styles.pricingInput} />
-                <TextInput value={otherCosts} onChangeText={setOtherCosts} keyboardType="decimal-pad" placeholder="Other costs (INR)" placeholderTextColor="#8A8A84" style={styles.pricingInput} />
+                <Text style={styles.cardHeading}>{translate(selectedLanguage, "pricingHeader")}</Text>
+                <Text style={styles.pricingHint}>{translate(selectedLanguage, "pricingHint")}</Text>
+                <TextInput value={materialCost} onChangeText={setMaterialCost} keyboardType="decimal-pad" placeholder={translate(selectedLanguage, "materialCostPlaceholder")} placeholderTextColor="#8A8A84" style={styles.pricingInput} />
+                <TextInput value={workingDays} onChangeText={setWorkingDays} keyboardType="decimal-pad" placeholder={translate(selectedLanguage, "workingDaysPlaceholder")} placeholderTextColor="#8A8A84" style={styles.pricingInput} />
+                <TextInput value={hoursPerDay} onChangeText={setHoursPerDay} keyboardType="decimal-pad" placeholder={translate(selectedLanguage, "workingHoursPlaceholder")} placeholderTextColor="#8A8A84" style={styles.pricingInput} />
+                <TextInput value={otherCosts} onChangeText={setOtherCosts} keyboardType="decimal-pad" placeholder={translate(selectedLanguage, "otherCostsPlaceholder")} placeholderTextColor="#8A8A84" style={styles.pricingInput} />
                 <Pressable
                     onPress={toggleRecording}
                     style={[styles.voiceButton, recording && styles.recordingButton]}
                 >
                     <Text style={styles.voiceButtonText}>
-                        {recording ? "Stop Recording" : audioUri ? "Voice Recording Ready" : "Record Voice"}
+                        {recording ? translate(selectedLanguage, "stopRecording") : audioUri ? translate(selectedLanguage, "voiceReady") : translate(selectedLanguage, "recordVoice")}
                     </Text>
                 </Pressable>
                 {audioUri && !recording ? (
                     <Pressable onPress={() => getPriceSuggestion(audioUri)} style={styles.recommendButton}>
-                        <Text style={styles.recommendButtonText}>Use Voice for Recommendation</Text>
+                        <Text style={styles.recommendButtonText}>{translate(selectedLanguage, "useVoiceRecommendation")}</Text>
                     </Pressable>
                 ) : null}
                 <Pressable onPress={() => getPriceSuggestion()} disabled={pricingLoading} style={styles.recommendButton}>
-                    <Text style={styles.recommendButtonText}>Calculate From Form</Text>
+                    <Text style={styles.recommendButtonText}>{translate(selectedLanguage, "calculateFromForm")}</Text>
                 </Pressable>
                 {pricingLoading ? <ActivityIndicator color="#007A5E" style={styles.pricingLoader} /> : null}
                 {pricingError ? <Text style={styles.pricingError}>{pricingError}</Text> : null}
                 {pricing ? (
                     <>
-                        <Text style={styles.suggestionLabel}>Suggested Price</Text>
+                        <Text style={styles.suggestionLabel}>{translate(selectedLanguage, "suggestedPrice")}</Text>
                         <Text style={styles.suggestedPrice}>
                             {pricing.currency || "INR"} {pricing.suggestedPrice}
                         </Text>
                         {pricing.minimumPrice && pricing.maximumPrice ? (
                             <Text style={styles.recommendedRange}>
-                                Recommended Range: {pricing.currency || "INR"} {pricing.minimumPrice} - {pricing.maximumPrice}
+                                {translate(selectedLanguage, "recommendedRange", {
+                                    currency: pricing.currency || "INR",
+                                    min: String(pricing.minimumPrice),
+                                    max: String(pricing.maximumPrice),
+                                })}
                             </Text>
                         ) : null}
-                        <Text style={styles.finalPriceLabel}>Your final price</Text>
+                        <Text style={styles.finalPriceLabel}>{translate(selectedLanguage, "finalPrice")}</Text>
                         <TextInput
                             value={priceDraft}
                             onChangeText={setPriceDraft}
                             keyboardType="decimal-pad"
                             style={styles.priceInput}
-                            placeholder="Enter final price"
+                            placeholder={translate(selectedLanguage, "enterFinalPrice")}
                         />
-                        <Text style={styles.pricingNote}>
-                            AI provides a recommendation; you choose the final price.
-                        </Text>
+                        <Text style={styles.pricingNote}>{translate(selectedLanguage, "pricingNote")}</Text>
                     </>
                 ) : null}
             </View>
@@ -441,14 +428,10 @@ export default function ProductResult() {
                             style={{ marginRight: 8 }}
                         />
 
-                        <Text style={styles.saveButtonText}>
-                            Saving...
-                        </Text>
+                        <Text style={styles.saveButtonText}>{translate(selectedLanguage, "saving")}</Text>
                     </>
                 ) : (
-                    <Text style={styles.saveButtonText}>
-                        Save Product
-                    </Text>
+                    <Text style={styles.saveButtonText}>{translate(selectedLanguage, "saveProduct")}</Text>
                 )}
             </TouchableOpacity>
 
@@ -456,9 +439,7 @@ export default function ProductResult() {
                 style={styles.backButton}
                 onPress={() => router.back()}
             >
-                <Text style={styles.backButtonText}>
-                    Back to Edit
-                </Text>
+                <Text style={styles.backButtonText}>{translate(selectedLanguage, "backToEdit")}</Text>
             </TouchableOpacity>
         </ScrollView>
     );
@@ -606,6 +587,36 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: "#444444",
         lineHeight: 23,
+    },
+
+    languageTabs: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 14,
+    },
+
+    languageTab: {
+        borderColor: "#D8DED8",
+        borderRadius: 8,
+        borderWidth: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+    },
+
+    languageTabActive: {
+        backgroundColor: "#007A5E",
+        borderColor: "#007A5E",
+    },
+
+    languageTabText: {
+        color: "#59655F",
+        fontSize: 13,
+        fontWeight: "600",
+    },
+
+    languageTabTextActive: {
+        color: "#FFFFFF",
     },
 
     keywordContainer: {

@@ -11,8 +11,9 @@ import {
 	View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { getLanguageCode, translate } from "../../constants/translations";
 
-const API_URL = "http://10.5.65.32:5000";
+const API_URL = "http://10.20.56.14:5000";
 
 type Product = {
 	_id?: string;
@@ -28,7 +29,7 @@ const textValue = (value: unknown, fallback = "") =>
 
 export default function BuyerMarketplace() {
 	const { language } = useLocalSearchParams<{ language?: string }>();
-	const isHindi = language === "hi";
+	const selectedLanguage = getLanguageCode(language);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [search, setSearch] = useState("");
 	const [loading, setLoading] = useState(true);
@@ -73,17 +74,17 @@ export default function BuyerMarketplace() {
 				style={({ pressed }) => [styles.card, pressed && styles.pressed]}
 				onPress={() => router.push({
 					pathname: "/buyer/product" as never,
-					params: { product: JSON.stringify(item), language: language || "en" },
+					params: { product: JSON.stringify(item), language: selectedLanguage },
 				})}
 			>
 				{imageUri ? <Image source={{ uri: imageUri }} style={styles.image} /> : (
 					<View style={styles.placeholder}><Text style={styles.placeholderText}>SIH</Text></View>
 				)}
 				<View style={styles.cardBody}>
-					<Text style={styles.productTitle} numberOfLines={1}>{textValue(item.title, isHindi ? "उत्पाद" : "Untitled product")}</Text>
-					<Text style={styles.category} numberOfLines={1}>{textValue(item.category, isHindi ? "शिल्प" : "Handcrafted")}</Text>
-					<Text style={styles.description} numberOfLines={2}>{textValue(item.description, isHindi ? "विवरण उपलब्ध नहीं है" : "Description not available")}</Text>
-					<Text style={styles.price}>{typeof price === "number" ? `${currency} ${price}` : (isHindi ? "कीमत उपलब्ध नहीं" : "Price not available")}</Text>
+					<Text style={styles.productTitle} numberOfLines={1}>{textValue(item.title, translate(selectedLanguage, "untitledProduct"))}</Text>
+					<Text style={styles.category} numberOfLines={1}>{textValue(item.category, translate(selectedLanguage, "handcrafted"))}</Text>
+					<Text style={styles.description} numberOfLines={2}>{textValue(item.description, translate(selectedLanguage, "description"))}</Text>
+					<Text style={styles.price}>{typeof price === "number" ? `${currency} ${price}` : translate(selectedLanguage, "priceNotAvailable")}</Text>
 				</View>
 			</Pressable>
 		);
@@ -92,23 +93,23 @@ export default function BuyerMarketplace() {
 	return (
 		<SafeAreaView style={styles.screen}>
 			<View style={styles.header}>
-				<Text style={styles.heading}>{isHindi ? "उत्पाद खोजें" : "Discover Products"}</Text>
-				<Text style={styles.subtitle}>{isHindi ? "भारतीय कारीगरों द्वारा बनाए उत्पाद देखें" : "Explore products crafted by Indian artisans"}</Text>
+				<Text style={styles.heading}>{translate(selectedLanguage, "discoverProducts")}</Text>
+				<Text style={styles.subtitle}>{translate(selectedLanguage, "exploreProducts")}</Text>
 				<TextInput
 					value={search}
 					onChangeText={setSearch}
-					placeholder={isHindi ? "उत्पाद खोजें..." : "Search products..."}
+					placeholder={translate(selectedLanguage, "searchProducts")}
 					placeholderTextColor="#8A8A84"
 					style={styles.search}
-					accessibilityLabel="Search products"
+					accessibilityLabel={translate(selectedLanguage, "searchProducts")}
 				/>
 			</View>
 			{loading ? (
-				<View style={styles.state}><ActivityIndicator size="large" color="#087F5B" /><Text style={styles.stateText}>{isHindi ? "उत्पाद लोड हो रहे हैं..." : "Loading products..."}</Text></View>
+				<View style={styles.state}><ActivityIndicator size="large" color="#087F5B" /><Text style={styles.stateText}>{translate(selectedLanguage, "loadingProducts")}</Text></View>
 			) : error ? (
-				<View style={styles.state}><Text style={styles.stateTitle}>{isHindi ? "उत्पाद लोड नहीं हो सके" : "Unable to load products"}</Text><Pressable style={styles.retry} onPress={fetchProducts}><Text style={styles.retryText}>{isHindi ? "फिर कोशिश करें" : "Retry"}</Text></Pressable></View>
+				<View style={styles.state}><Text style={styles.stateTitle}>{translate(selectedLanguage, "unableToLoad")}</Text><Pressable style={styles.retry} onPress={fetchProducts}><Text style={styles.retryText}>{translate(selectedLanguage, "retry")}</Text></Pressable></View>
 			) : products.length === 0 ? (
-				<View style={styles.state}><Text style={styles.stateTitle}>{isHindi ? "अभी कोई उत्पाद नहीं" : "No products yet"}</Text><Text style={styles.stateText}>{isHindi ? "कारीगरों द्वारा बनाए उत्पाद यहां दिखाई देंगे।" : "Products created by artisans will appear here."}</Text></View>
+				<View style={styles.state}><Text style={styles.stateTitle}>{translate(selectedLanguage, "noProducts")}</Text><Text style={styles.stateText}>{translate(selectedLanguage, "productCreatedText")}</Text></View>
 			) : (
 				<FlatList data={filteredProducts} keyExtractor={(item, index) => item._id || String(index)} renderItem={renderProduct} contentContainerStyle={styles.list} />
 			)}

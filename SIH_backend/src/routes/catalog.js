@@ -3,6 +3,7 @@ import multer from "multer";
 import { generateProductInfo } from "../services/gemini.js";
 import Product from "../models/product.js";
 import { uploadImage } from "../services/cloudinaryService.js";
+import sharp from "sharp";
 
 const router = express.Router();
 
@@ -16,15 +17,16 @@ const upload = multer({
 router.post(
   "/generate",
   upload.fields([
-    { name: "image", maxCount: 1 },
+    { name: "image", maxCount: 4 },
     { name: "audio", maxCount: 1 }
   ]),
   async (req, res) => {
     try {
-      const image = req.files?.image?.[0];
+      const images = req.files?.image || [];
+      const image = images[0];
       const audio = req.files?.audio?.[0];
 
-      const language = req.body.language || "unknown";
+      const language = String(req.body.language || "en").toLowerCase();
 
       if (!image) {
         return res.status(400).json({
@@ -46,10 +48,19 @@ router.post(
         language
       });
 
-      const uploadedImage = await uploadImage(
-        image.buffer,
-        image.mimetype
-      );
+      const rankedImages = await Promise.all(images.map(async (candidate, index) => {
+        const metadata = await sharp(candidate.buffer).metadata();
+        return {
+          candidate,
+          index,
+          score: (metadata.width || 0) * (metadata.height || 0)
+        };
+      }));
+      rankedImages.sort((left, right) => right.score - left.score || left.index - right.index);
+      const bestImages = rankedImages.slice(0, 3);
+      const uploadedImages = await Promise.all(bestImages.map(({ candidate }) =>
+        uploadImage(candidate.buffer, candidate.mimetype)
+      ));
 
       // Create product document from AI result
       const product = await Product.create({
@@ -75,12 +86,19 @@ router.post(
             language: "hi",
             title: result.title,
             description: result.descriptionHindi
-          }
+          },
+          ...(!["en", "english", "hi", "hindi"].includes(String(result.detectedLanguage).toLowerCase())
+            ? [{
+                language: result.detectedLanguage,
+                title: result.title,
+                description: result.descriptionOriginal
+              }]
+            : [])
         ],
 
         // We are not storing the uploaded image itself in MongoDB.
         // Image storage will be handled separately.
-        images: [uploadedImage.secure_url],
+        images: uploadedImages.map((uploadedImage) => uploadedImage.secure_url),
 
         materials: [
           {
